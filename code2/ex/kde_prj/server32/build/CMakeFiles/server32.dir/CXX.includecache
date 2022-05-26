@@ -1,0 +1,28 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/zt/temp1/kde_prj/server32/server302.cpp
+iostream
+-
+unistd.h
+-
+server302.h
+/home/zt/temp1/kde_prj/server32/server302.h
+
+/home/zt/temp1/kde_prj/server32/server302.h
+string.h
+-
+sys/socket.h
+-
+netinet/in.h
+-
+stdio.h
+-
+signal.h
+-
+

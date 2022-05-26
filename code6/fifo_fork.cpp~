@@ -1,0 +1,121 @@
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <iostream>
+#include <errno.h>
+#include<stdio.h> 
+#include<stdlib.h> 
+
+#include <fcntl.h>
+#include <sys/wait.h>
+#include <sys/time.h>
+#include <signal.h>
+#include <string.h>
+
+using namespace std;
+
+#define FIFO_NAME1	"/tmp/fifo_test1"
+#define FIFO_NAME2	"/tmp/fifo_test2"
+
+int main(int argc,char **argv)
+{
+	char psend2[]="hello";
+	char psend1[]="welcome";
+	char precv2[16];
+	char precv1[16];
+	int fd1,fd2;
+	pid_t pid;
+
+	if(mkfifo(FIFO_NAME1,O_CREAT|O_EXCL)<0&&(errno!=EEXIST)){
+		cout<<"create fifo1 error"<<endl;
+		exit(1);
+	}
+	if(mkfifo(FIFO_NAME2,O_CREAT|O_EXCL)<0&&(errno!=EEXIST)){
+		cout<<"create fifo2 error"<<endl;
+		exit(1);
+	}
+
+	pid=fork();
+	if(pid==0)
+	{	//child1 FIFO_NAME1--read,FIFO_NAME2--write	
+		cout<<"child #1..."<<endl;
+		fd1=open(FIFO_NAME1,O_RDONLY|O_NONBLOCK,0);
+		if(fd1==-1){
+			perror("child #1 open read fail");
+			exit(0);
+		}
+ 		for(int i=0;i<10;i++){
+			fd2=open(FIFO_NAME2,O_WRONLY|O_NONBLOCK,0);
+			if(fd2==-1)
+				sleep(1);
+		}
+		if(fd2==-1){
+			perror("child #1 open write fail");
+			exit(0);
+		}
+		cout<<"child #1 open success"<<endl;
+
+		int write_num=write(fd2,psend2,sizeof(psend2));
+		if(write_num==-1 && errno==EAGAIN)
+			cout<<"#1 write fifo error,try later:"<<endl;
+		else
+			cout<<"#1 write:"<<psend2<<endl;
+		
+		sleep(1);
+		int read_num=read(fd1,precv1,16);
+		if(read_num==-1 && errno==EAGAIN)
+			cout<<"#1 read fifo error,try later:"<<endl;
+		else
+			cout<<"#1 read:"<<precv1<<endl;
+		
+		sleep(5);
+		//unlink(FIFO_NAME2);
+		exit(0);
+	}
+
+	pid=fork();
+	if(pid==0)
+	{	//child2 FIFO_NAME1--write,FIFO_NAME2--read	
+		cout<<"child #2..."<<endl;
+		fd2=open(FIFO_NAME2,O_RDONLY|O_NONBLOCK,0);
+		if(fd2==-1){
+			perror("child #2 open read fail");
+			exit(0);
+		}
+ 		for(int i=0;i<10;i++){
+			fd1=open(FIFO_NAME1,O_WRONLY|O_NONBLOCK,0);
+			if(fd1==-1)
+				sleep(1);
+		}
+		if(fd1==-1){
+			perror("child #2 open write fail");
+			exit(0);
+		}
+		cout<<"child #2 open success"<<endl;
+		
+		int read_num=0;
+		while(read_num<=0){
+			read_num=read(fd2,precv2,16);
+			if(read_num==-1 && errno==EAGAIN)
+				continue;
+			else{
+				cout<<"#2 read error"<<endl;
+				exit(0);
+			}
+		}
+		cout<<"#2 read:"<<precv2<<endl;
+		
+		int write_num=write(fd1,psend1,sizeof(psend1));
+		if(write_num==-1 && errno==EAGAIN)
+			cout<<"#2 write fifo error,try later:"<<endl;
+		else
+			cout<<"#2 write:"<<psend1<<endl;
+		
+		sleep(5);
+		//unlink(FIFO_NAME1);
+		exit(0);
+	}
+
+	exit(0);
+}
+

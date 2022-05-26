@@ -1,0 +1,1 @@
+/home/zt/temp1/kde_prj/client3/build/CMakeFiles/client3.dir

@@ -1,0 +1,1 @@
+/home/zt/temp1/kde_prj/server32/build/CMakeFiles/server32.dir

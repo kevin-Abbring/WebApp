@@ -1,0 +1,90 @@
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <iostream>
+#include <errno.h>
+#include <stdio.h> 
+#include <stdlib.h> 
+
+#include <fcntl.h>
+#include <sys/wait.h>
+#include <sys/time.h>
+#include <signal.h>
+#include <string.h>
+
+using namespace std;
+
+#include <sys/types.h>
+#include <sys/ipc.h>
+#include <sys/sem.h>
+#include <stdio.h>
+#include <signal.h>
+
+#define  SEM_NAME "/tmp/sem_name.tmp"
+
+void sigint_handler(int);
+int semid;
+unsigned int count;
+struct sembuf psembuf,vsembuf;
+
+int main(int argc,char*argv[])
+{
+	int i,first,second;
+	key_t key;
+	short initarray[2],outarray[2];
+  
+	key=ftok(SEM_NAME,'a');
+	if(argc!=2)
+	{
+		cout<<"usage:./semp -x, x:-c--create,+1--inc,-1--dec"<<endl;
+		exit(1);	
+	}
+
+	if(strcmp(argv[2],"-c")==0)
+	{
+		signal(SIGINT,sigint_handler);
+		semid=semget(key,2,0777|IPC_CREAT);
+		initarray[0]=initarray[1]=1;
+		semctl(semid,2,SETALL,initarray);//1，1
+		semctl(semid,2,GETALL,outarray);
+		printf("sem init vals %d %d\n",outarray[0],outarray[1]);
+		sleep(60);
+	}else if(argv[1]==0){
+		first=0;
+		second=1;
+	}else{
+		first=1;
+		second=0;
+	}
+
+	semid=semget(key,2,0777);
+	psembuf.sem_op=-1;
+	psembuf.sem_flg=SEM_UNDO;
+	vsembuf.sem_op=1;
+	vsembuf.sem_flg=SEM_UNDO;
+  
+		for(count=0;;count++)
+		{
+			psembuf.sem_num=first;
+			semop(semid,&psembuf,1); //1—操作个数
+			psembuf.sem_num=second;
+			semop(semid,&psembuf,1);
+	  
+			semctl(semid,2,GETALL,outarray);
+			printf("proc %d count %d sem value %d %d\n",getpid(),
+				count,outarray[0],outarray[1]);
+	  
+			vsembuf.sem_num=second;
+			semop(semid,&vsembuf,1);
+			vsembuf.sem_num=first;
+			semop(semid,&vsembuf,1);
+		}
+	 
+	}
+	
+	
+void sigint_handler(int sig)
+{
+	semctl(semid,2,IPC_RMID,0);
+	exit(0);
+}

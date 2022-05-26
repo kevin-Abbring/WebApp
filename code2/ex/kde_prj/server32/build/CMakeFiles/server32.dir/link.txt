@@ -1,0 +1,1 @@
+/usr/bin/c++   -g    CMakeFiles/server32.dir/server302.o CMakeFiles/server32.dir/main.o  -o server32 -rdynamic 

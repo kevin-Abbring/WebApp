@@ -1,0 +1,41 @@
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <iostream>
+
+using namespace std;
+
+off_t		offset;
+
+int main(int argc,char **argv){
+	int 	fd;
+	pid_t 	pid;
+	
+	fd=open("/etc/passwd",O_RDONLY);
+	offset=lseek(fd,10,SEEK_CUR);
+	pid=fork();
+	if(pid==0)
+	{
+		//子进程程序
+		int off=lseek(fd,0,SEEK_CUR);//读取当前文件指针位置
+		cout<<"child:file pointer position "<<off<<endl;
+		offset=lseek(fd,0,SEEK_END);
+		cout<<"child:change file pointer position "<<offset<<endl;
+		exit(0);
+	}
+	else if(pid>0)
+	{
+		//父进程程序
+		wait(NULL);//等待子进程结束
+		cout<<"parent:offset= "<<offset<<endl;//查看全局变量offset是否共享
+		int off=lseek(fd,0,SEEK_CUR);//读取当前文件指针位置
+		cout<<"parent:file pointer position "<<off<<endl;
+	}
+	else
+	{
+		//调用失败
+		cout<<"create child process fail"<<endl;
+	}
+	return 0;
+}
